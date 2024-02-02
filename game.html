@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MultiPlayer Military Game</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+
+    <script src="script.js"></script>
+  </head>
+
+  <body>
+    <script>
+      px = py = parseInt(Math.random() * 200);
+      player_arr = [{ id: parseInt(Math.random() * 1e5), x: px, y: py, rotation: 0 }];
+      pd = 30;
+      ps = 15;
+      enemy_arr = [];
+      ed = 25;
+      es = 5;
+      shot_arr = [];
+      sd = 8;
+      shot_speed = 7;
+      imgWidth = 30;
+      imgHeight = 30;
+      tankWidth = 60;
+      tankHeight = 60;
+      bulletOffset = 8;
+//  Store rotation state
+      const ws = new WebSocket("ws://65.2.86.225:3000");
+
+      window.onload = function () {
+        spawn();
+        listenForMessages();
+      };
+
+      // const players = [{ id: "Player1" }, { id: "Player2" }];
+      function isOpen(ws) {
+        return ws.readyState === ws.OPEN;
+      }
+
+      function spawn() {
+        canvas = document.createElement("canvas");
+        canvas.width = 700;
+        canvas.height = 700;
+        document.body.appendChild(canvas);
+        context = canvas.getContext("2d");
+        setInterval(update, 1000 / 30);
+        setInterval(spawnEnemy, 2000);
+        document.addEventListener("keydown", keyPush);
+      }
+
+      function spawnEnemy() {
+        enemy_arr.push({ x: canvas.width, y: Math.random() * canvas.height });
+      }
+
+      function update() {
+        // enemy_arr.push({ x: canvas.width, y: Math.random() * canvas.height });
+        // console.log(rotation)
+        context.fillStyle = "black";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        // context.fillStyle = "white";
+        // context.fillRect(px - pd / 2, py - pd / 2, pd, pd);
+
+        // Draw the player image
+
+        // draw players
+        for (var p = 0; p < player_arr.length; p++) {
+          var playerImage = new Image();
+          playerImage.src = "./images/tank.png";
+          context.save();
+          context.translate(
+            player_arr[p].x + tankWidth / 2,
+            player_arr[p].y + tankHeight / 2
+          );
+          context.rotate(player_arr[p].rotation);
+          context.drawImage(
+            playerImage,
+            -tankWidth / 2,
+            -tankHeight / 2,
+            tankWidth,
+            tankHeight
+          );
+          context.restore();
+        }
+
+        // Draw players list
+        context.fillStyle = "white";
+        context.font = "14px Arial";
+        context.background = "green";
+        context.padding = "10px";
+        context.fillText("Players List:", 10, 20);
+       console.log(player_arr,"player_arr")
+        for (var p = 0; p < player_arr.length; p++) {
+          context.fillText(player_arr[p].id, 10, 40 + p * 20);
+        }
+
+        //   // Wait for the image to load
+        // img.onload = function() {
+        //   // Draw the image on the canvas
+        //   context.drawImage(img, 0, 0, img.width, img.height);
+
+        // };
+
+        var bulletUp = new Image();
+        bulletUp.src = "./images/bullet-up.png";
+
+        var bulletLeft = new Image();
+        bulletLeft.src = "./images/bullet.png";
+
+        var bulletDown = new Image();
+        bulletDown.src = "./images/bullet-down.png";
+
+        var bulletRight = new Image();
+        bulletRight.src = "./images/bullet-right.png";
+
+        // context.drawImage(img, px - pd / 2, py - pd / 2, pd, pd);
+
+        for (var s = 0; s < shot_arr.length; s++) {
+          shot_arr[s].x += shot_arr[s].speedX;
+          shot_arr[s].y += shot_arr[s].speedY;
+
+          // context.fillRect(shot_arr[s].x - sd / 2, shot_arr[s].y - sd / 2, sd, sd);
+          // draw the bullet image with the correct rotation
+
+          var bulletImage;
+          if (shot_arr[s].speedX !== 0) {
+            bulletImage = bulletLeft;
+          } else {
+            bulletImage = bulletUp;
+          }
+          if (shot_arr[s].speedY > 0) {
+            bulletImage = bulletDown;
+          }
+          if (shot_arr[s].speedX > 0) {
+            bulletImage = bulletRight;
+          }
+          context.drawImage(
+            bulletImage,
+            shot_arr[s].x + (Math.SQRT2 * tankHeight) / 4 - bulletOffset,
+            shot_arr[s].y + (Math.SQRT2 * tankHeight) / 4,
+            imgWidth,
+            imgHeight
+          );
+
+          context.restore();
+
+          // context.fillRect(shot_arr[s].x - sd / 2, shot_arr[s].y - sd / 2, sd, sd);
+
+          // enemy collision detection
+          for (var e = enemy_arr.length - 1; e >= 0; e--) {
+            var dx = Math.abs(enemy_arr[e].x - shot_arr[s].x);
+            var dy = Math.abs(enemy_arr[e].y - shot_arr[s].y);
+            var dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < (sd + ed) / 2) {
+              // write a code to show this explosion image for 2 seconds
+
+              var explosion = new Image();
+              explosion.src = "./images/blast.png";
+              context.drawImage(
+                explosion,
+                enemy_arr[e].x - ed / 2,
+                enemy_arr[e].y - ed / 2,
+                ed,
+                ed
+              );
+
+              enemy_arr.splice(e, 1);
+              shot_arr.splice(s, 1);
+            }
+          }
+        }
+      }
+
+      function showPlayers() {
+        // write a function to show the listing of the players who are playing the game in the same room
+        const list = document.getElementById("list");
+        list.innerHTML = "";
+        players.forEach((player) => {
+          const li = document.createElement("li");
+          li.innerText = player.id;
+          list.appendChild(li);
+        });
+      }
+
+      function drawProgressBar() {
+        // Draw the progress bar on the canvas
+        context.fillStyle = "#ddd";
+        context.fillRect(50, 50, 200, 20); // Change the coordinates and dimensions as needed
+        context.fillStyle = "#4caf50";
+        context.fillRect(50, 50, playerLife * 2, 20); // Adjust width based on playerLife
+      }
+      function keyPush(evt) {
+        // clean up the shot array
+        for (var s = shot_arr.length - 1; s >= 0; s--) {
+          if (
+            shot_arr[s].x < 0 ||
+            shot_arr[s].x > canvas.width ||
+            shot_arr[s].y < 0 ||
+            shot_arr[s].y > canvas.height
+          ) {
+            shot_arr.splice(s, 1);
+          }
+        }
+
+        // handle rotation
+        if (evt.keyCode === 37) {
+          player_arr[0].rotation = -Math.PI / 2;
+        } else if (evt.keyCode === 38) {
+          player_arr[0].rotation = 0;
+        } else if (evt.keyCode === 39) {
+          player_arr[0].rotation = Math.PI / 2;
+        } else if (evt.keyCode === 40) {
+          player_arr[0].rotation = Math.PI;
+        }
+
+        switch (evt.keyCode) {
+          case 32:
+            shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: 0, speedY: -shot_speed }); // Up
+            shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: 0, speedY: shot_speed }); // Down
+            shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: -shot_speed, speedY: 0 }); // Left
+            shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: shot_speed, speedY: 0 }); // Right
+            break;
+          case 37:
+            player_arr[0].x -= ps;
+
+            break;
+          case 38:
+            player_arr[0].y -= ps;
+
+            break;
+          case 39:
+            player_arr[0].x += ps;
+
+            break;
+          case 40:
+            player_arr[0].y += ps;
+
+            break;
+        }
+
+        if (isOpen(ws)) {
+          sendPlayerPosition({
+            id: player_arr[0].id,
+            x: player_arr[0].x,
+            y: player_arr[0].y,
+            rotation: player_arr[0].rotation,
+          });
+        } else {
+          // connect to server
+          alert("Not connected to server, refresh page");
+        }
+      }
+    </script>
+  </body>
+</html>

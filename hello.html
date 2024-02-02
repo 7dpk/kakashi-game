@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game</title>
+  <style>
+    body {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  px = py = parseInt(Math.random() * 200)
+  player_arr = [{ id: parseInt(Math.random() * 1e5), x: px, y: py}];
+  pd = 30;
+  ps = 15;
+  enemy_arr = [];
+  ed = 25;
+  es = 5;
+  shot_arr = [];
+  sd = 8;
+  shot_speed = 7;
+  const ws = new WebSocket('ws://65.2.86.225:3000');
+
+  window.onload = function() {
+    spawn();
+    listenForMessages();
+  }
+
+  function isOpen(ws) { return ws.readyState === ws.OPEN }
+
+  function listenForMessages() {
+    ws.addEventListener('open', (event) => {
+      // Send a message to the server
+      console.log("connected to server")
+      ws.send(JSON.stringify({ type: 'playerJoined', player: { id:player_arr[0].id, x: player_arr[0].x, y: player_arr[0].y } }));
+    });
+    ws.addEventListener('message', (event) => {
+    // Handle messages received from the server
+    const message = JSON.parse(event.data);
+    console.log("Received message:", message);
+
+    switch (message.type) {
+      case 'playerJoined':
+        console.log("Player joined", message.player);
+        addPlayer(message.player);
+        break;
+      case 'playerMoved':
+        console.log("Another player moved", message);
+        // Example: Update player position based on received message
+        updatePlayerPosition(message.playerId, message.position);
+        break;
+      default:
+        console.log("Unknown message type:", message.type);
+    }
+  });
+  }
+
+  function addPlayer(player) {
+    // Example: Add new player to the game
+    // This is where you'd modify your game state based on incoming data
+    // player: { id, position } object representing the new player
+    console.log(player);
+    player_arr.push({ id: player.id, x: player.x, y: player.y });
+  }
+
+  function sendPlayerPosition(position) {
+    // Example: Send player position to the server
+    // This is where you'd send your game state to the server
+    // position: { x, y } object representing the player's position
+    ws.send(JSON.stringify({ type: 'playerMoved', position }));
+  }
+
+  function updatePlayerPosition(playerId, position) {
+    // Example: Update player position in the game
+    // This is where you'd modify your game state based on incoming data
+    // playerId: unique identifier for the player
+    // position: { x, y } object representing the player's new position
+    console.log(playerId, position);
+
+    // Add new player if not already in player_arr
+    var playerExists = false;
+    for (var p = 0; p < player_arr.length; p++) {
+      if (player_arr[p].id == playerId) {
+        playerExists = true;
+      }
+    }
+    if (!playerExists) {
+      player_arr.push({ id: playerId, x: position.x, y: position.y });
+    }
+
+    // Update player_arr
+    for (var p = 0; p < player_arr.length; p++) {
+      if (player_arr[p].id == playerId) {
+        player_arr[p].x = position.x;
+        player_arr[p].y = position.y;
+      }
+    }
+
+
+  }
+
+  function spawn() {
+    canvas = document.createElement("canvas");
+    canvas.width = 600;
+    canvas.height = 600;
+    document.body.appendChild(canvas);
+    context = canvas.getContext("2d");
+    setInterval(update, 1000 / 30);
+    setInterval(spawnEnemy, 2000);
+    document.addEventListener('keydown', keyPush);
+  }
+
+  function spawnEnemy() {
+    enemy_arr.push({ x: canvas.width, y: Math.random() * canvas.height });
+  }
+
+  function update() {
+    // enemy_arr.push({ x: canvas.width, y: Math.random() * canvas.height });
+
+    context.fillStyle = "black";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    // context.fillStyle = "white";
+    // context.fillRect(px - pd / 2, py - pd / 2, pd, pd);
+
+    // draw players
+    for (var p = 0; p < player_arr.length; p++) {
+      context.fillStyle = "white";
+      context.fillRect(player_arr[p].x - pd / 2, player_arr[p].y - pd / 2, pd, pd);
+    }
+
+    context.fillStyle = "lime";
+    for (var s = 0; s < shot_arr.length; s++) {
+      shot_arr[s].x += shot_arr[s].speedX;
+      shot_arr[s].y += shot_arr[s].speedY;
+      context.fillRect(shot_arr[s].x - sd / 2, shot_arr[s].y - sd / 2, sd, sd);
+      context.fillRect(shot_arr[s].x - sd / 2, shot_arr[s].y - sd / 2, sd, sd);
+    
+      // enemy collision detection
+    //   for (var e = enemy_arr.length - 1; e >= 0; e--) {
+    //     var dx = Math.abs(enemy_arr[e].x - shot_arr[s].x);
+    //     var dy = Math.abs(enemy_arr[e].y - shot_arr[s].y);
+    //     var dist = Math.sqrt(dx * dx + dy * dy);
+
+    //     if (dist < (sd + ed) / 2) {
+    //       enemy_arr.splice(e, 1);
+    //     }
+    //   }
+    }
+
+    // context.fillStyle = "red";
+    // for (var e = 0; e < enemy_arr.length; e++) {
+    //   enemy_arr[e].x -= es;
+    //   context.fillRect(enemy_arr[e].x - ed / 2, enemy_arr[e].y - ed / 2, ed, ed);
+
+    //   var dx = Math.abs(enemy_arr[e].x - px);
+    //   var dy = Math.abs(enemy_arr[e].y - py);
+    //   var dist = Math.sqrt(dx * dx + dy * dy);
+
+    //   if (dist < (pd + ed) / 2) {
+    //     // Handle collision with player
+    //     shot_arr = [];
+    //     enemy_arr = [];
+    //     px = py = 100;
+    //     break;
+    //   }
+    // }
+  }
+
+  function keyPush(evt) {
+    switch (evt.keyCode) {
+      case 32:
+        shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: 0, speedY: -shot_speed }); // Up
+        shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: 0, speedY: shot_speed }); // Down
+        shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: -shot_speed, speedY: 0 }); // Left
+        shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: shot_speed, speedY: 0 }); // Right
+        break;
+      case 37:
+        // update player position
+        player_arr[0].x -= ps;
+        
+
+        break;
+      case 38:
+        player_arr[0].y -= ps;
+        break;
+      case 39:
+        player_arr[0].x += ps;
+        break;
+      case 40:
+        player_arr[0].y += ps;
+        break;
+    }
+
+    if (isOpen(ws)) {
+      sendPlayerPosition({ id: player_arr[0].id, x: player_arr[0].x, y: player_arr[0].y });
+    } else {
+        // connect to server
+        alert('Not connected to server, refresh page');
+    }
+    
+  }
+</script>
+
+</body>
+</html>
