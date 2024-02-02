@@ -31,7 +31,7 @@
       tankHeight = 60;
       bulletOffset = 8;
 //  Store rotation state
-      const ws = new WebSocket("ws://65.2.86.225:3000");
+      const ws = new WebSocket("ws://localhost:8080");
 
       window.onload = function () {
         spawn();
@@ -95,7 +95,7 @@
         context.background = "green";
         context.padding = "10px";
         context.fillText("Players List:", 10, 20);
-       console.log(player_arr,"player_arr")
+      //  console.log(player_arr,"player_arr")
         for (var p = 0; p < player_arr.length; p++) {
           context.fillText(player_arr[p].id, 10, 40 + p * 20);
         }

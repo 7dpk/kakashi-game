@@ -17,7 +17,7 @@
       case 'playerMoved':
         console.log("Another player moved", message);
         // Example: Update player position based on received message
-        updatePlayerPosition(message.playerId, message.position);
+        updatePlayerPosition(message.playerId, message.player);
         break;
       default:
         console.log("Unknown message type:", message.type);
