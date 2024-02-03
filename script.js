@@ -19,6 +19,14 @@
         // Example: Update player position based on received message
         updatePlayerPosition(message.playerId, message.player);
         break;
+      case 'playerShot':
+        console.log("Another player shot", message);
+        // Example: Create a bullet based on received message
+        const player = message.player
+        shot_arr.push({ x: player.x, y: player.y, speedX: 0, speedY: -shot_speed }); // Up
+        shot_arr.push({ x: player.x, y: player.y, speedX: 0, speedY: shot_speed }); // Down
+        shot_arr.push({ x: player.x, y: player.y, speedX: -shot_speed, speedY: 0 }); // Left
+        shot_arr.push({ x: player.x, y: player.y, speedX: shot_speed, speedY: 0 }); // Right
       default:
         console.log("Unknown message type:", message.type);
     }
@@ -34,12 +42,11 @@
   }
 
   function sendPlayerPosition(player) {
-    // Example: Send player position to the server
-    // This is where you'd send your game state to the server
-    // position: { x, y } object representing the player's position
     ws.send(JSON.stringify({ type: 'playerMoved', player }));
   }
-
+  function sendShotPosition(player) {
+    ws.send(JSON.stringify({ type: 'playerShot', player }));
+  }
   function updatePlayerPosition(playerId, player) {
     // Example: Update player player in the game
     // This is where you'd modify your game state based on incoming data

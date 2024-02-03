@@ -16,7 +16,9 @@
   <body>
     <script>
       px = py = parseInt(Math.random() * 200);
-      player_arr = [{ id: parseInt(Math.random() * 1e5), x: px, y: py, rotation: 0 }];
+      player_arr = [
+        { id: parseInt(Math.random() * 1e5), x: px, y: py, rotation: 0 },
+      ];
       pd = 30;
       ps = 15;
       enemy_arr = [];
@@ -30,7 +32,7 @@
       tankWidth = 60;
       tankHeight = 60;
       bulletOffset = 8;
-//  Store rotation state
+      //  Store rotation state
       const ws = new WebSocket("ws://localhost:8080");
 
       window.onload = function () {
@@ -95,7 +97,7 @@
         context.background = "green";
         context.padding = "10px";
         context.fillText("Players List:", 10, 20);
-      //  console.log(player_arr,"player_arr")
+        //  console.log(player_arr,"player_arr")
         for (var p = 0; p < player_arr.length; p++) {
           context.fillText(player_arr[p].id, 10, 40 + p * 20);
         }
@@ -222,10 +224,40 @@
 
         switch (evt.keyCode) {
           case 32:
-            shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: 0, speedY: -shot_speed }); // Up
-            shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: 0, speedY: shot_speed }); // Down
-            shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: -shot_speed, speedY: 0 }); // Left
-            shot_arr.push({ x: player_arr[0].x, y: player_arr[0].y, speedX: shot_speed, speedY: 0 }); // Right
+            shot_arr.push({
+              x: player_arr[0].x,
+              y: player_arr[0].y,
+              speedX: 0,
+              speedY: -shot_speed,
+            }); // Up
+            shot_arr.push({
+              x: player_arr[0].x,
+              y: player_arr[0].y,
+              speedX: 0,
+              speedY: shot_speed,
+            }); // Down
+            shot_arr.push({
+              x: player_arr[0].x,
+              y: player_arr[0].y,
+              speedX: -shot_speed,
+              speedY: 0,
+            }); // Left
+            shot_arr.push({
+              x: player_arr[0].x,
+              y: player_arr[0].y,
+              speedX: shot_speed,
+              speedY: 0,
+            }); // Right
+            if (isOpen(ws)) {
+              sendShotPosition({
+                id: player_arr[0].id,
+                x: player_arr[0].x,
+                y: player_arr[0].y,
+                rotation: player_arr[0].rotation,
+              });
+            } else {
+              alert("Not connected to server, refresh page");
+            }
             break;
           case 37:
             player_arr[0].x -= ps;
@@ -253,7 +285,6 @@
             rotation: player_arr[0].rotation,
           });
         } else {
-          // connect to server
           alert("Not connected to server, refresh page");
         }
       }

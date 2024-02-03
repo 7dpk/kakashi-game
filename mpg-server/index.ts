@@ -33,12 +33,13 @@ wss.on('connection', (ws) => {
                     client.send(JSON.stringify(parsedMessage))
                 }
             })
+        } else if (parsedMessage.type == 'playerShot') {
+            wss.clients.forEach(client => {
+                if (client != ws) {
+                    client.send(JSON.stringify(parsedMessage))
+                }
+            })
         }
     })
-})
-
-const server = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' })
-    res.end('okay')
 })
 
